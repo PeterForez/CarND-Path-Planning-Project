@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 
+#define VELOCITY_DELTA 0.224
+#define VELOCITY_MAX   49.5
+#define SAFE_DISTANCE  20
+#define RIGHT          (+1)
+#define LEFT           (-1)
+
 // for convenience
 using std::string;
 using std::vector;
@@ -174,4 +180,57 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
   return {x,y};
 }
 
+// Detect if there is a car in front of us
+bool isCarAhead(int lane, vector<vector<double>> sensor_fusion, double car_s, double prev_size)
+{
+  bool too_close = false;
+            
+  for (int i = 0; i < sensor_fusion.size(); i++)                           // Loop over all the car in the track
+  {                                                                        
+    // Car in my lane                                                      
+    float d = sensor_fusion[i][6];                                         // Read the Value of d for the vehicle
+    if (d < (2+4*lane+2) && d > (2+4*lane-2))                              // Check if the vehicle is moving in our lane 
+    {                                                                      
+      double vx = sensor_fusion[i][3];                                     
+      double vy = sensor_fusion[i][4];                                     
+      double check_speed = sqrt(vx*vx + vy*vy);                            // Magnitude of velocity; will be used to determine where the vehicile will be in the future
+      double check_car_s = sensor_fusion[i][5];
+
+      check_car_s += (double)prev_size * 0.02 * check_speed;
+      
+      if ((check_car_s > car_s) && ((check_car_s - car_s) < SAFE_DISTANCE))// Check that the car in fron of us and have a small gap
+      {
+        too_close = true;
+      }              
+    }
+  }
+  return too_close;
+}
+
+// Detect if turning Right or Left is safe or not
+bool isTurnSafe(int lane, vector<vector<double>> sensor_fusion, double car_s, double prev_size, int dir)
+{
+  bool safe = true;
+  for (int i = 0; i < sensor_fusion.size(); i++)                          
+  {
+    float d = sensor_fusion[i][6]; 
+    if (d < (2+4*(lane+dir)+2) && d > (2+4*(lane+dir)-2) && d) 
+    {
+      double vx = sensor_fusion[i][3];                                     
+      double vy = sensor_fusion[i][4];                                     
+      double check_speed = sqrt(vx*vx + vy*vy);                           
+      double check_car_s = sensor_fusion[i][5];
+
+      check_car_s += (double)prev_size * 0.02 * check_speed;
+      if(
+        ((check_car_s > car_s) && (check_car_s - car_s) < SAFE_DISTANCE) ||
+        ((check_car_s < car_s) && (car_s - check_car_s) < SAFE_DISTANCE)
+      )
+      {
+        safe = false;
+      }  
+    }
+  }
+  return safe;
+}
 #endif  // HELPERS_H
