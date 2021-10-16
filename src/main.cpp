@@ -53,7 +53,7 @@ int main()
     map_waypoints_dy.push_back(d_y);
   }
   
-  //Start in lane 1
+  //Start Lane
   int lane = 1;
   
   //Have a reference velocity to target
@@ -78,90 +78,120 @@ int main()
         
         if (event == "telemetry") 
         {
-          // j[1] is the data JSON object
-          
-          // Main car's localization Data
-          double car_x = j[1]["x"];
-          double car_y = j[1]["y"];
-          double car_s = j[1]["s"];
-          double car_d = j[1]["d"];
-          double car_yaw = j[1]["yaw"];
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Main car's localization Data
+ * =============================================================================================================
+ ***************************************************************************************************************/          
+          double car_x     = j[1]["x"];
+          double car_y     = j[1]["y"];
+          double car_s     = j[1]["s"];
+          double car_d     = j[1]["d"];
+          double car_yaw   = j[1]["yaw"];
           double car_speed = j[1]["speed"];
-
-          // Previous path data given to the Planner
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Previous path data given to the Planner
+ * =============================================================================================================
+ ***************************************************************************************************************/ 
           auto previous_path_x = j[1]["previous_path_x"];
           auto previous_path_y = j[1]["previous_path_y"];
-          // Previous path's end s and d values 
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Previous path's end s and d values 
+ * =============================================================================================================
+ ***************************************************************************************************************/ 
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * 
+ * =============================================================================================================
+ ***************************************************************************************************************/ 
 
-          // Sensor Fusion Data, a list of all other cars on the same side 
-          //   of the road.
-          
-          /* The data format for each car is: [ id, x, y, vx, vy, s, d]. 
-           * The id is a unique identifier for that car. 
-           * The x, y values are in global map coordinates, and 
-           * the vx, vy values are the velocity components, also in reference to the global map. 
-           * Finally s and d are the Frenet coordinates for that car.
-           */
-           
-          auto sensor_fusion = j[1]["sensor_fusion"];
-          int prev_size = previous_path_x.size();
-          
           /**
            * TODO: define a path made up of (x,y) points that the car will visit
            *   sequentially every .02 seconds
            */
-          
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Update car_s with the end_path_s
+ * =============================================================================================================
+ ***************************************************************************************************************/    
+          int prev_size = previous_path_x.size();
           if(prev_size > 0)
           {
             car_s = end_path_s;
           }
-          
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Read Sensor Fusion Data
+ * Sensor Fusion Data is a list of all other cars on the same side of the road.
+ * The data format for each car is: [ id, x, y, vx, vy, s, d]. 
+ * - id     is a unique identifier for that car. 
+ * - x, y   values are in global map coordinates, and 
+ * - vx, vy values are the velocity components, also in reference to the global map. 
+ * - s, d   values are the Frenet coordinates for that car.
+ * =============================================================================================================
+ ***************************************************************************************************************/ 
+          auto sensor_fusion = j[1]["sensor_fusion"];
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Detect if there is a car in front of us
+ * =============================================================================================================
+ ***************************************************************************************************************/  
           bool too_close = false;
-          
-          // Find ref_v to use
-          for (int i = 0; i < sensor_fusion.size(); i++)
-          {
-            // Car in my lane
-            float d = sensor_fusion[i][6];
-            if (d < (2+4*lane+2) && d > (2+4*lane-2)) // each lane is 4 meter
-            {
-              double vx = sensor_fusion[i][3];
-              double vy = sensor_fusion[i][4];
-              double check_speed = sqrt(vx*vx + vy*vy); // Magnitude of velocity
-              double check_car_s = sensor_fusion[i][5];
-
-              check_car_s += (double)prev_size * 0.02 * check_speed;
-              
-              if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
-              {
-                // Do some logic here, lower reference velocity so we do not crash into the car in front of us.
-                // Could also flag to try to change lanes
-                //ref_vel = 29.5; //mph
-                too_close = true;
-                if(lane > 0)
-                {
-                  lane = 0;
-                }
-              }              
-            }
-          }
-          
+          too_close = isCarAhead(lane, sensor_fusion, car_s, prev_size);
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * If too Close change the Lane
+ * =============================================================================================================
+ ***************************************************************************************************************/          
           if(too_close)
           {
-            ref_vel -= 0.224; //5m/s^2
+            if(lane > 0 && isTurnSafe(lane, sensor_fusion, car_s, prev_size, LEFT))
+            {
+              lane --;
+              too_close = false;
+              std::cout << "Turn Left is Safe" << std::endl;
+            }
+            else if (lane < 2 && isTurnSafe(lane, sensor_fusion, car_s, prev_size, RIGHT))
+            {
+              lane ++;
+              too_close = false;
+              std::cout << "Turn Right is Safe" << std::endl;
+            }
+            else
+            {
+              std::cout << "Keep lane and decrease speed" << std::endl;
+            }
           }
-          else if(ref_vel < 49.5)
-          {
-            ref_vel += 0.224;
-          }
-          
-          // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
-          // Later we will interpolate these waypoints with a spline and fill it in with more points to control speed.
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Adjust the velocity
+ * =============================================================================================================
+ ***************************************************************************************************************/
+          if(too_close)                   // If too close decrese the speed
+          {                               // If too close decrese the speed
+            ref_vel -= VELOCITY_DELTA;    // If too close decrese the speed
+          }                               // If too close decrese the speed
+          else if(ref_vel < VELOCITY_MAX) // Increase the velocity
+          {                               // Increase the velocity
+            ref_vel += VELOCITY_DELTA;    // Increase the velocity
+          }                               // Increase the velocity
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
+ * Later we will interpolate these waypoints with a spline and fill it in with more points to control speed.
+ * =============================================================================================================
+ ***************************************************************************************************************/
           vector<double> ptsx;
           vector<double> ptsy;
-          
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * 
+ * =============================================================================================================
+ ***************************************************************************************************************/          
           // reference x, y, yaw states
           // Either we will reference the starting point as where the car is or at the previous paths end point.
           double ref_x   = car_x;
@@ -223,14 +253,19 @@ int main()
             ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
             ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
           }
-          
-          // Create a spline
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Create a spline
+ * Set (x,y) points to the spline
+ * =============================================================================================================
+ ***************************************************************************************************************/          
           tk::spline s;
-          
-          // Set (x,y) points to the spline
           s.set_points(ptsx, ptsy);
-          
-          //Define the actual (x,y) points we will use for the planner 
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Define the actual (x,y) points we will use for the planner 
+ * =============================================================================================================
+ ***************************************************************************************************************/                    
           vector<double> next_x_vals;
           vector<double> next_y_vals;
           
@@ -262,18 +297,18 @@ int main()
             double y_ref = y_point;
             
             // rotate back to normal after rotating it earlier
-            x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
-            y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
-            
-            x_point += ref_x;
-            y_point += ref_y;
+            x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);           // Return back to global coordinates: Rotation
+            y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);           // Return back to global coordinates: Rotation
+
+            x_point += ref_x;                                                // Return back to global coordinates: Shift
+            y_point += ref_y;                                                // Return back to global coordinates: Shift
             
             next_x_vals.push_back(x_point);
             next_y_vals.push_back(y_point);           
           }
 
-          /* 
-          double dist_inc = 0.3;// How much the points will be spaced apart; 50 mile/hour
+          /* Initial Code Stay in the lane
+          double dist_inc = 0.3;// How much the points will be spaced apart; 30 mile/hour
           for (int i = 0; i < 50; ++i) 
           {
             double next_s = car_s + (i+1) * dist_inc; 
@@ -285,8 +320,13 @@ int main()
             next_y_vals.push_back(xy[1]);
           }
           */
-          //END
-
+          
+          
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Send the next points to the simulator
+ * =============================================================================================================
+ ***************************************************************************************************************/
           json msgJson;
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
