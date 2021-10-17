@@ -53,11 +53,9 @@ int main()
     map_waypoints_dy.push_back(d_y);
   }
   
-  //Start Lane
-  int lane = 1;
   
-  //Have a reference velocity to target
-  double ref_vel = 0.0; //mph
+  int lane = 1;           //Starting Lane  
+  double ref_vel = 0.0;   //Have a reference velocity to target in mph
 
   h.onMessage([&lane, &ref_vel, &map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx, &map_waypoints_dy]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) 
@@ -80,7 +78,7 @@ int main()
         {
 /*************************************************************************************************************** 
  * =============================================================================================================
- * Main car's localization Data
+ * Getting the main car's localization Data from the simulator.
  * =============================================================================================================
  ***************************************************************************************************************/          
           double car_x     = j[1]["x"];
@@ -91,42 +89,32 @@ int main()
           double car_speed = j[1]["speed"];
 /*************************************************************************************************************** 
  * =============================================================================================================
- * Previous path data given to the Planner
+ * Getting the previous path data given to the Planner.
  * =============================================================================================================
  ***************************************************************************************************************/ 
           auto previous_path_x = j[1]["previous_path_x"];
           auto previous_path_y = j[1]["previous_path_y"];
 /*************************************************************************************************************** 
  * =============================================================================================================
- * Previous path's end s and d values 
+ * Getting the previous path's end s and d values.
  * =============================================================================================================
  ***************************************************************************************************************/ 
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
 /*************************************************************************************************************** 
  * =============================================================================================================
- * 
- * =============================================================================================================
- ***************************************************************************************************************/ 
-
-          /**
-           * TODO: define a path made up of (x,y) points that the car will visit
-           *   sequentially every .02 seconds
-           */
-/*************************************************************************************************************** 
- * =============================================================================================================
- * Update car_s with the end_path_s
+ * Update car_s with the end_path_s.
  * =============================================================================================================
  ***************************************************************************************************************/    
           int prev_size = previous_path_x.size();
+          //std::cout << "prev_size = " << prev_size << std::endl;
           if(prev_size > 0)
           {
             car_s = end_path_s;
           }
 /*************************************************************************************************************** 
  * =============================================================================================================
- * Read Sensor Fusion Data
- * Sensor Fusion Data is a list of all other cars on the same side of the road.
+ * Read Sensor Fusion Data which is a list of all other cars on the same side of the road.
  * The data format for each car is: [ id, x, y, vx, vy, s, d]. 
  * - id     is a unique identifier for that car. 
  * - x, y   values are in global map coordinates, and 
@@ -137,27 +125,27 @@ int main()
           auto sensor_fusion = j[1]["sensor_fusion"];
 /*************************************************************************************************************** 
  * =============================================================================================================
- * Detect if there is a car in front of us
+ * Detect if there is a car in front of us.
  * =============================================================================================================
  ***************************************************************************************************************/  
           bool too_close = false;
           too_close = isCarAhead(lane, sensor_fusion, car_s, prev_size);
 /*************************************************************************************************************** 
  * =============================================================================================================
- * If too Close change the Lane
+ * If there is a car in front of us, we will consider change the lane or decrease the speed.
  * =============================================================================================================
  ***************************************************************************************************************/          
           if(too_close)
           {
-            if(lane > 0 && isTurnSafe(lane, sensor_fusion, car_s, prev_size, LEFT))
+            if(lane > 0 && isTurnSafe(lane, sensor_fusion, car_s, prev_size, LEFT))       
             {
-              lane --;
+              lane --;                                                  //Consider Left lane shift if it is safe.
               too_close = false;
               std::cout << "Turn Left is Safe" << std::endl;
             }
             else if (lane < 2 && isTurnSafe(lane, sensor_fusion, car_s, prev_size, RIGHT))
             {
-              lane ++;
+              lane ++;                                                 //Consider Right lane shift if it is safe.
               too_close = false;
               std::cout << "Turn Right is Safe" << std::endl;
             }
@@ -171,14 +159,14 @@ int main()
  * Adjust the velocity
  * =============================================================================================================
  ***************************************************************************************************************/
-          if(too_close)                   // If too close decrese the speed
-          {                               // If too close decrese the speed
-            ref_vel -= VELOCITY_DELTA;    // If too close decrese the speed
-          }                               // If too close decrese the speed
-          else if(ref_vel < VELOCITY_MAX) // Increase the velocity
-          {                               // Increase the velocity
-            ref_vel += VELOCITY_DELTA;    // Increase the velocity
-          }                               // Increase the velocity
+          if(too_close)                                       // If too close decrese the speed
+          {                                                   // If too close decrese the speed
+            ref_vel -= VELOCITY_DELTA;                        // If too close decrese the speed
+          }                                                   // If too close decrese the speed
+          else if(ref_vel < VELOCITY_MAX)                     // Increase the velocity
+          {                                                   // Increase the velocity
+            ref_vel += VELOCITY_DELTA;                        // Increase the velocity
+          }                                                   // Increase the velocity
 /*************************************************************************************************************** 
  * =============================================================================================================
  * Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
@@ -189,64 +177,67 @@ int main()
           vector<double> ptsy;
 /*************************************************************************************************************** 
  * =============================================================================================================
- * 
+ * Define reference x, y and yaw states
  * =============================================================================================================
  ***************************************************************************************************************/          
-          // reference x, y, yaw states
-          // Either we will reference the starting point as where the car is or at the previous paths end point.
           double ref_x   = car_x;
           double ref_y   = car_y;
           double ref_yaw = deg2rad(car_yaw);
-          
-          // if previous size is almost empty, use the car as starting reference
-          
-          if(prev_size < 2)
-          {
-            // Use two points that make the path tangent to the car
-            double prev_car_x = car_x - cos(car_yaw);
-            double prev_car_y = car_y - sin(car_yaw);
+ /*************************************************************************************************************** 
+ * =============================================================================================================
+ * Push two points: Either we will reference the starting point as where the car is or at the previous paths end points.
+ * =============================================================================================================
+ ***************************************************************************************************************/        
+          if(prev_size < 2)                                   // if previous size is almost empty, use the car as starting reference
+          {                                                   
+            double prev_car_x = car_x - cos(car_yaw);         // Use two points that make the path tangent to the car
+            double prev_car_y = car_y - sin(car_yaw);         // Use two points that make the path tangent to the car
+
+            ptsx.push_back(prev_car_x);                       // Push the twp points
+            ptsx.push_back(car_x);                            // Push the twp points
+
+            ptsy.push_back(prev_car_y);                       // Push the twp points
+            ptsy.push_back(car_y);                            // Push the twp points
+          }                                                   
+          else                                                // Use the previous path's end as starting reference
+          {                                                   
+            ref_x = previous_path_x[prev_size-1];             // Redefine reference state as previous path end pointer
+            ref_y = previous_path_y[prev_size-1];             // Redefine reference state as previous path end pointer
             
-            ptsx.push_back(prev_car_x);
-            ptsx.push_back(car_x);
-            
-            ptsy.push_back(prev_car_y);
-            ptsy.push_back(car_y);         
-          }
-          else // Use the previous path's end as starting reference
-          {
-            // Redeine reference state as previous path end pointer
-            ref_x = previous_path_x[prev_size-1];
-            ref_y = previous_path_y[prev_size-1];
-            
-            double ref_x_prev = previous_path_x[prev_size-2];
+            double ref_x_prev = previous_path_x[prev_size-2]; 
             double ref_y_prev = previous_path_y[prev_size-2];
             
             ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
             
-            // Use two points that make the path tangent to the previous path's end point
-            ptsx.push_back(ref_x_prev);
-            ptsx.push_back(ref_x);
-            
-            ptsy.push_back(ref_y_prev);
-            ptsy.push_back(ref_y);       
-          }
+            ptsx.push_back(ref_x_prev);                       // Push the two points
+            ptsx.push_back(ref_x);                            // Push the two points
 
-          // In Frenet add evenly 30m spaced points ahead of the starting reference.
+            ptsy.push_back(ref_y_prev);                       // Push the two points
+            ptsy.push_back(ref_y);                            // Push the two points
+          }
+ /*************************************************************************************************************** 
+ * =============================================================================================================
+ * Push three more points: In Frenet add evenly 30m spaced points ahead of the starting reference.
+ * =============================================================================================================
+ ***************************************************************************************************************/
           vector<double> next_wp0 = getXY(car_s + 30, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y); 
           vector<double> next_wp1 = getXY(car_s + 60, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y); 
           vector<double> next_wp2 = getXY(car_s + 90, (2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y); 
           
-          ptsx.push_back(next_wp0[0]);
-          ptsx.push_back(next_wp1[0]);
-          ptsx.push_back(next_wp2[0]);
-          
-          ptsy.push_back(next_wp0[1]);
-          ptsy.push_back(next_wp1[1]);
-          ptsy.push_back(next_wp2[1]);
-          
+          ptsx.push_back(next_wp0[0]);                        // Push the three points
+          ptsx.push_back(next_wp1[0]);                        // Push the three points
+          ptsx.push_back(next_wp2[0]);                        // Push the three points
+
+          ptsy.push_back(next_wp0[1]);                        // Push the three points
+          ptsy.push_back(next_wp1[1]);                        // Push the three points
+          ptsy.push_back(next_wp2[1]);                        // Push the three points
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Shift car reference angel to 0 degrees
+ * =============================================================================================================
+ ***************************************************************************************************************/          
           for (int i = 0; i < ptsx.size(); i++)
           {
-            // shift car reference angel to 0 degrees
             double shift_x = ptsx[i] - ref_x;
             double shift_y = ptsy[i] - ref_y;
             
@@ -259,8 +250,8 @@ int main()
  * Set (x,y) points to the spline
  * =============================================================================================================
  ***************************************************************************************************************/          
-          tk::spline s;
-          s.set_points(ptsx, ptsy);
+          tk::spline s;                                       // Calling the spline class
+          s.set_points(ptsx, ptsy);                           // Setting the points of the curve
 /*************************************************************************************************************** 
  * =============================================================================================================
  * Define the actual (x,y) points we will use for the planner 
@@ -268,23 +259,31 @@ int main()
  ***************************************************************************************************************/                    
           vector<double> next_x_vals;
           vector<double> next_y_vals;
-          
-          
-          //Start with all of the previous path points from last time
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Start with all of the previous path points from last time
+ * =============================================================================================================
+ ***************************************************************************************************************/                     
           for (int i = 0; i < previous_path_x.size(); ++i) 
           {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);            
           }
-          
-          // Calculate how to break up spline points so that we travel at our desired velocity
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Calculate how to break up spline points so that we travel at our desired velocity
+ * =============================================================================================================
+ ***************************************************************************************************************/               
           double target_x = 30.0;
           double target_y = s(target_x);
           double target_dist = sqrt((target_x * target_x) + (target_y * target_y));
           
           double x_add_on = 0;
-          
-          //Fill up the rest of our path planner after filling it with previous points, here we will always output 50 points.
+/*************************************************************************************************************** 
+ * =============================================================================================================
+ * Fill up the rest of our path planner after filling it with previous points, here we will always output 50 points.
+ * =============================================================================================================
+ ***************************************************************************************************************/              
           for (int i = 1; i <= 50-previous_path_x.size(); i++)
           {
             double N = target_dist / (0.02 * ref_vel/2.24);
@@ -296,7 +295,6 @@ int main()
             double x_ref = x_point;
             double y_ref = y_point;
             
-            // rotate back to normal after rotating it earlier
             x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);           // Return back to global coordinates: Rotation
             y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);           // Return back to global coordinates: Rotation
 
@@ -306,22 +304,6 @@ int main()
             next_x_vals.push_back(x_point);
             next_y_vals.push_back(y_point);           
           }
-
-          /* Initial Code Stay in the lane
-          double dist_inc = 0.3;// How much the points will be spaced apart; 30 mile/hour
-          for (int i = 0; i < 50; ++i) 
-          {
-            double next_s = car_s + (i+1) * dist_inc; 
-            double next_d = 1.5 * 4;
-            
-            vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            
-            next_x_vals.push_back(xy[0]);
-            next_y_vals.push_back(xy[1]);
-          }
-          */
-          
-          
 /*************************************************************************************************************** 
  * =============================================================================================================
  * Send the next points to the simulator
