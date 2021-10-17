@@ -58,11 +58,21 @@ The highway's waypoints loop around so the frenet s value, distance along the ro
 ```bash
 cmake .. && make && ./path_planning
 ```
-5. Please tell me who you are
+5. Others:
+-  Change Directory
+
+```bash
+cd CarND-Path-Planning-Project
+```
+   - Please tell me who you are
 
 ```bash
 git config --global user.email "Peter.Forez@gmail.com"
 git config --global user.name "Peter Forez"
+```
+- Pull changes
+```bash
+git pull https://github.com/PeterForez/CarND-Path-Planning-Project
 ```
 
 Here is the data provided from the Simulator to the C++ Program
