@@ -185,20 +185,22 @@ bool isCarAhead(int lane, vector<vector<double>> sensor_fusion, double car_s, do
 {
   bool too_close = false;
             
-  for (int i = 0; i < sensor_fusion.size(); i++)                           // Loop over all the car in the track
-  {                                                                        
-    // Car in my lane                                                      
-    float d = sensor_fusion[i][6];                                         // Read the Value of d for the vehicle
-    if (d < (2+4*lane+2) && d > (2+4*lane-2))                              // Check if the vehicle is moving in our lane 
-    {                                                                      
-      double vx = sensor_fusion[i][3];                                     
-      double vy = sensor_fusion[i][4];                                     
-      double check_speed = sqrt(vx*vx + vy*vy);                            // Magnitude of velocity; will be used to determine where the vehicile will be in the future
-      double check_car_s = sensor_fusion[i][5];
-
-      check_car_s += (double)prev_size * 0.02 * check_speed;
-      
-      if ((check_car_s > car_s) && ((check_car_s - car_s) < SAFE_DISTANCE))// Check that the car in fron of us and have a small gap
+  for (int i = 0; i < sensor_fusion.size(); i++)                            // Loop over all the car in the track
+  {                                                                         
+    // Car in my lane                                                       
+    float d = sensor_fusion[i][6];                                          // Read the Value of d for the vehicle
+    if (d < (2+4*lane+2) && d > (2+4*lane-2))                               // Check if the vehicle is moving in our lane 
+    {                                                                       
+      double vx = sensor_fusion[i][3];                                      // Velocity component in x direction 
+      double vy = sensor_fusion[i][4];                                      // Velocity component in y direction 
+      double check_speed = sqrt(vx*vx + vy*vy);                             // Car Speed
+      double check_car_s = sensor_fusion[i][5];                             // Car s
+                                                                            
+      check_car_s += (double)prev_size * 0.02 * check_speed;                
+                                                                            
+      if (                                                                  
+        (check_car_s > car_s) && ((check_car_s - car_s) < SAFE_DISTANCE)    // Check that the car in front of us and have a small gap
+      )
       {
         too_close = true;
       }              
@@ -211,20 +213,20 @@ bool isCarAhead(int lane, vector<vector<double>> sensor_fusion, double car_s, do
 bool isTurnSafe(int lane, vector<vector<double>> sensor_fusion, double car_s, double prev_size, int dir)
 {
   bool safe = true;
-  for (int i = 0; i < sensor_fusion.size(); i++)                          
+  for (int i = 0; i < sensor_fusion.size(); i++)                            // Loop over all the car in the track
   {
     float d = sensor_fusion[i][6]; 
-    if (d < (2+4*(lane+dir)+2) && d > (2+4*(lane+dir)-2) && d) 
+    if (d < (2+4*(lane+dir)+2) && d > (2+4*(lane+dir)-2) && d)              // Detect if the car is present in the desired lane
     {
-      double vx = sensor_fusion[i][3];                                     
-      double vy = sensor_fusion[i][4];                                     
-      double check_speed = sqrt(vx*vx + vy*vy);                           
-      double check_car_s = sensor_fusion[i][5];
+      double vx = sensor_fusion[i][3];                                      // Velocity component in x direction                           
+      double vy = sensor_fusion[i][4];                                      // Velocity component in y direction                      
+      double check_speed = sqrt(vx*vx + vy*vy);                             // Car Speed
+      double check_car_s = sensor_fusion[i][5];                             // Car s
 
-      check_car_s += (double)prev_size * 0.02 * check_speed;
+      check_car_s += (double)prev_size * 0.02 * check_speed;                // Check next car s
       if(
-        ((check_car_s > car_s) && (check_car_s - car_s) < SAFE_DISTANCE) ||
-        ((check_car_s < car_s) && (car_s - check_car_s) < SAFE_DISTANCE)
+        ((check_car_s > car_s) && (check_car_s - car_s) < SAFE_DISTANCE) || // Enough Gap distance for the car Ahead
+        ((check_car_s < car_s) && (car_s - check_car_s) < SAFE_DISTANCE)    // Enough Gap distance for the car behind
       )
       {
         safe = false;
