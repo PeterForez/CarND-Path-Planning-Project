@@ -232,8 +232,8 @@ The Steps of the program is as follow:
    2. Consider Right lane shift if it is safe.
    3. Decrease the speed if the shifing the lane is not safe.
 6.  Adjust the velocity
-   4.  If there is a car in front of us, and shifting lanes is not safe; decrease the velocity.
-   5.  If there is no car in front of us, increase the velocity gradually to the maximum velocity.
+    1.  If there is a car in front of us, and shifting lanes is not safe; decrease the velocity.
+    2.  If there is no car in front of us, increase the velocity gradually to the maximum velocity.
 
 
 
