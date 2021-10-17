@@ -75,6 +75,13 @@ git config --global user.name "Peter Forez"
 git pull https://github.com/PeterForez/CarND-Path-Planning-Project
 ```
 
+
+```bash
+cd CarND-Path-Planning-Project
+git config --global user.email "Peter.Forez@gmail.com"
+git config --global user.name "Peter Forez"
+git pull https://github.com/PeterForez/CarND-Path-Planning-Project
+```
 Here is the data provided from the Simulator to the C++ Program
 
 #### Main car's localization Data (No Noise)
