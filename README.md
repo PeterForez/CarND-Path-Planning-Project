@@ -191,8 +191,11 @@ A well written README file can enhance your project and portfolio.  Develop your
 > Code must compile without errors with cmake and make.
 > Given that we've made CMakeLists.txt as general as possible, it's recommend that you do not change it unless you can guarantee that your changes will still compile on any platform.
 
+![](\Evidence\Build.PNG)
 
 ## Valid Trajectories
+The Car was able to drive more than 4.32 miles without any incident. This is done while keeping the speed to the maximum as feasible as possible.
+![](\Evidence\05.PNG)
 ### The car is able to drive at least 4.32 miles without incident..
 > The top right screen of the simulator shows the current/best miles driven without incident. Incidents include exceeding acceleration/jerk/speed, collision, and driving outside of the lanes. Each incident case is also listed below in more detail.
 
@@ -215,7 +218,23 @@ A well written README file can enhance your project and portfolio.  Develop your
 ### There is a reflection on how to generate paths
 > The code model for generating paths is described in detail. This can be part of the README or a separate doc labeled "Model Documentation".
 
-I started with the [Project Q&A](https://www.youtube.com/watch?v=7sI3VHFPP0w) starter code.
+I started with the [Project Q&A](https://www.youtube.com/watch?v=7sI3VHFPP0w) starter code. 
+The Steps of the program is as follow:
+1. Getting from the simulator
+   1. The main car's localization Data from the simulator.
+   2. The previous path data given to the Planner.
+   3. The previous path's end s and d values.
+2. Update car_s with the end_path_s.
+3. Read Sensor Fusion Data which is a list of all other cars on the same side of the road.
+4. Detect if there is a car in front of us.
+5. If there is a car in front of us, we will consider change the lane or decrease the speed.
+   1. Consider Left lane shift if it is safe.
+   2. Consider Right lane shift if it is safe.
+   3. Decrease the speed if the shifing the lane is not safe.
+6.  Adjust the velocity
+   4.  If there is a car in front of us, and shifting lanes is not safe; decrease the velocity.
+   5.  If there is no car in front of us, increase the velocity gradually to the maximum velocity.
+
 
 
 
