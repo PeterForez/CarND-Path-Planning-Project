@@ -58,6 +58,12 @@ The highway's waypoints loop around so the frenet s value, distance along the ro
 ```bash
 cmake .. && make && ./path_planning
 ```
+5. Please tell me who you are
+
+```bash
+git config --global user.email "Peter.Forez@gmail.com"
+git config --global user.name "Peter Forez"
+```
 
 Here is the data provided from the Simulator to the C++ Program
 
