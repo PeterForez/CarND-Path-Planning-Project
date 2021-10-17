@@ -55,6 +55,10 @@ The highway's waypoints loop around so the frenet s value, distance along the ro
 3. Compile: `cmake .. && make`
 4. Run it: `./path_planning`.
 
+```bash
+cmake .. && make && ./path_planning
+```
+
 Here is the data provided from the Simulator to the C++ Program
 
 #### Main car's localization Data (No Noise)
@@ -210,6 +214,8 @@ A well written README file can enhance your project and portfolio.  Develop your
 ## Reflection
 ### There is a reflection on how to generate paths
 > The code model for generating paths is described in detail. This can be part of the README or a separate doc labeled "Model Documentation".
+
+I started with the [Project Q&A](https://www.youtube.com/watch?v=7sI3VHFPP0w) starter code.
 
 
 
