@@ -28,6 +28,7 @@
     - [The car is able to change lanes](#the-car-is-able-to-change-lanes)
   - [Reflection](#reflection)
     - [There is a reflection on how to generate paths](#there-is-a-reflection-on-how-to-generate-paths)
+  - [Suggestions to Make Your Project Stand Out](#suggestions-to-make-your-project-stand-out)
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
    
@@ -209,6 +210,40 @@ A well written README file can enhance your project and portfolio.  Develop your
 ## Reflection
 ### There is a reflection on how to generate paths
 > The code model for generating paths is described in detail. This can be part of the README or a separate doc labeled "Model Documentation".
+
+
+
+## Suggestions to Make Your Project Stand Out
+> Create a path planner that performs optimized lane changing, this means that the car only changes into a lane that improves its forward progress.
+> 
+This is the main contribution. I defined a function that check if turning right or left. The function return that is safe to take the turn unless there is cars in front or in back of us in the desired lane. 
+```cpp
+bool isTurnSafe(int lane, vector<vector<double>> sensor_fusion, double car_s, double prev_size, int dir)
+{
+  bool safe = true;
+  for (int i = 0; i < sensor_fusion.size(); i++)                            // Loop over all the car in the track
+  {
+    float d = sensor_fusion[i][6]; 
+    if (d < (2+4*(lane+dir)+2) && d > (2+4*(lane+dir)-2) && d)              // Detect if the car is present in the desired lane
+    {
+      double vx = sensor_fusion[i][3];                                      // Velocity component in x direction                           
+      double vy = sensor_fusion[i][4];                                      // Velocity component in y direction                      
+      double check_speed = sqrt(vx*vx + vy*vy);                             // Car Speed
+      double check_car_s = sensor_fusion[i][5];                             // Car s
+
+      check_car_s += (double)prev_size * 0.02 * check_speed;                // Check next car s
+      if(
+        ((check_car_s > car_s) && (check_car_s - car_s) < SAFE_DISTANCE) || // Enough Gap distance for the car Ahead
+        ((check_car_s < car_s) && (car_s - check_car_s) < SAFE_DISTANCE)    // Enough Gap distance for the car behind
+      )
+      {
+        safe = false;
+      }  
+    }
+  }
+  return safe;
+}
+```
 
 
 
