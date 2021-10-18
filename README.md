@@ -253,7 +253,7 @@ The Steps of the program is as follow:
 5. If there is a car in front of us, we will consider change the lane or decrease the speed.
    1. Consider Left lane shift if it is safe.
    2. Consider Right lane shift if it is safe.
-   3. Decrease the speed if the shifing the lane is not safe.
+   3. Decrease the speed until we get the speed of the front car if the shifing the lane is not safe.
 6.  Adjust the velocity
     1.  If there is a car in front of us, and shifting lanes is not safe; decrease the velocity.
     2.  If there is no car in front of us, increase the velocity gradually to the maximum velocity.
@@ -264,7 +264,7 @@ The Steps of the program is as follow:
 ## Suggestions to Make Your Project Stand Out
 > Create a path planner that performs optimized lane changing, this means that the car only changes into a lane that improves its forward progress.
 > 
-This is the main contribution. I defined a function that check if turning right or left. The function return that is safe to take the turn unless there is cars in front or in back of us in the desired lane. 
+This is the main contribution. I defined a function that check if turning right or left. The function return that is safe to take the turn unless there is cars in front or in back of us in the desired lane. This function is defined in `helper.h` file.
 ```cpp
 bool isTurnSafe(int lane, vector<vector<double>> sensor_fusion, double car_s, double prev_size, int dir)
 {
@@ -281,8 +281,8 @@ bool isTurnSafe(int lane, vector<vector<double>> sensor_fusion, double car_s, do
 
       check_car_s += (double)prev_size * 0.02 * check_speed;                // Check next car s
       if(
-        ((check_car_s > car_s) && (check_car_s - car_s) < SAFE_DISTANCE) || // Enough Gap distance for the car Ahead
-        ((check_car_s < car_s) && (car_s - check_car_s) < SAFE_DISTANCE)    // Enough Gap distance for the car behind
+        ((check_car_s >= car_s) && (check_car_s - car_s) < SAFE_DISTANCE) || // Enough Gap distance for the car Ahead
+        ((check_car_s <= car_s) && (car_s - check_car_s) < SAFE_DISTANCE)    // Enough Gap distance for the car behind
       )
       {
         safe = false;
