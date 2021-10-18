@@ -129,7 +129,29 @@ int main()
  * =============================================================================================================
  ***************************************************************************************************************/  
           bool too_close = false;
-          too_close = isCarAhead(lane, sensor_fusion, car_s, prev_size);
+          double front_car_speed;
+          for (int i = 0; i < sensor_fusion.size(); i++)                            // Loop over all the car in the track
+          {                                                                         
+            // Car in my lane                                                       
+            float d = sensor_fusion[i][6];                                          // Read the Value of d for the vehicle
+            if (d < (2+4*lane+2) && d > (2+4*lane-2))                               // Check if the vehicle is moving in our lane 
+            {                                                                       
+              double vx = sensor_fusion[i][3];                                      // Velocity component in x direction 
+              double vy = sensor_fusion[i][4];                                      // Velocity component in y direction 
+              double check_speed = sqrt(vx*vx + vy*vy);                             // Car Speed
+              double check_car_s = sensor_fusion[i][5];                             // Car s
+                                                                                    
+              check_car_s += (double)prev_size * 0.02 * check_speed;                
+                                                                                    
+              if (                                                                  
+                (check_car_s > car_s) && ((check_car_s - car_s) < SAFE_DISTANCE)    // Check that the car in front of us and have a small gap
+              )
+              {
+                too_close = true;
+                front_car_speed = check_speed;
+              }              
+            }
+          }
 /*************************************************************************************************************** 
  * =============================================================================================================
  * If there is a car in front of us, we will consider change the lane or decrease the speed.
@@ -159,14 +181,14 @@ int main()
  * Adjust the velocity
  * =============================================================================================================
  ***************************************************************************************************************/
-          if(too_close)                                       // If too close decrese the speed
-          {                                                   // If too close decrese the speed
-            ref_vel -= VELOCITY_DELTA;                        // If too close decrese the speed
-          }                                                   // If too close decrese the speed
-          else if(ref_vel < VELOCITY_MAX)                     // Increase the velocity
-          {                                                   // Increase the velocity
-            ref_vel += VELOCITY_DELTA;                        // Increase the velocity
-          }                                                   // Increase the velocity
+          if(too_close && (ref_vel > front_car_speed)) // If too close decrese the speed until we get the fron car speed
+          {                                            // If too close decrese the speed until we get the fron car speed
+            ref_vel -= VELOCITY_DELTA;                 // If too close decrese the speed until we get the fron car speed
+          }                                            // If too close decrese the speed until we get the fron car speed
+          else if(ref_vel < VELOCITY_MAX)              // Increase the velocity
+          {                                            // Increase the velocity
+            ref_vel += VELOCITY_DELTA;                 // Increase the velocity
+          }                                            // Increase the velocity
 /*************************************************************************************************************** 
  * =============================================================================================================
  * Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
