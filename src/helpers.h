@@ -7,7 +7,7 @@
 
 #define VELOCITY_DELTA 0.224
 #define VELOCITY_MAX   49.5
-#define SAFE_DISTANCE  20
+#define SAFE_DISTANCE  30
 #define RIGHT          (+1)
 #define LEFT           (-1)
 
@@ -225,8 +225,8 @@ bool isTurnSafe(int lane, vector<vector<double>> sensor_fusion, double car_s, do
 
       check_car_s += (double)prev_size * 0.02 * check_speed;                // Check next car s
       if(
-        ((check_car_s > car_s) && (check_car_s - car_s) < SAFE_DISTANCE) || // Enough Gap distance for the car Ahead
-        ((check_car_s < car_s) && (car_s - check_car_s) < SAFE_DISTANCE)    // Enough Gap distance for the car behind
+        ((check_car_s >= car_s) && (check_car_s - car_s) < SAFE_DISTANCE) || // Enough Gap distance for the car Ahead
+        ((check_car_s <= car_s) && (car_s - check_car_s) < SAFE_DISTANCE)    // Enough Gap distance for the car behind
       )
       {
         safe = false;
